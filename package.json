@@ -2,6 +2,7 @@
   "name": "ap_tic",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://ignacio-ibarra05.github.io/Tics2",
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",
     "@testing-library/dom": "^10.4.0",
