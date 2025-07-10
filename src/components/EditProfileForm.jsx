@@ -1,11 +1,19 @@
+// EditProfileForm.jsx
 import React, { useState, useEffect } from 'react';
 
 function EditProfileForm({ initialData, onSave, onCancel }) {
   const [formData, setFormData] = useState(initialData);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   // Sincroniza el estado interno del formulario si initialData cambia desde el padre
   useEffect(() => {
     setFormData(initialData);
+    // Limpiar campos de contraseña al recargar o cancelar
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
   }, [initialData]);
 
   const handleChange = (e) => {
@@ -13,9 +21,37 @@ function EditProfileForm({ initialData, onSave, onCancel }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePasswordChange = (e) => {
+    setNewPassword(e.target.value);
+    // Limpiar el error cuando el usuario empieza a escribir
+    if (passwordError) setPasswordError('');
+  };
+
+  const handleConfirmPasswordChange = (e) => {
+    setConfirmPassword(e.target.value);
+    // Limpiar el error cuando el usuario empieza a escribir
+    if (passwordError) setPasswordError('');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+
+    // Validar contraseñas si se está intentando cambiar
+    if (newPassword || confirmPassword) { // Solo validar si alguno de los campos de contraseña no está vacío
+      if (newPassword.length < 6) { // Ejemplo de validación de longitud mínima
+        setPasswordError('La contraseña debe tener al menos 6 caracteres.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPasswordError('Las contraseñas no coinciden.');
+        return;
+      }
+    }
+
+    // Si todo es válido o no se está cambiando la contraseña, procede
+    onSave(formData, newPassword); // Pasa también la nueva contraseña (vacía si no se cambió)
+    setNewPassword(''); // Limpia los campos después de guardar
+    setConfirmPassword('');
   };
 
   return (
@@ -29,7 +65,7 @@ function EditProfileForm({ initialData, onSave, onCancel }) {
           name="name"
           value={formData.name}
           onChange={handleChange}
-          required // Campo requerido
+          required
         />
       </div>
       <div className="form-group">
@@ -40,32 +76,34 @@ function EditProfileForm({ initialData, onSave, onCancel }) {
           name="username"
           value={formData.username}
           onChange={handleChange}
-          required // Campo requerido
+          required
         />
       </div>
-      {/* Puedes añadir más campos aquí para editar, por ejemplo: */}
-      {/*
+
+      <h3 className="section-subtitle">Cambiar Contraseña (opcional)</h3>
       <div className="form-group">
-        <label htmlFor="avatar_url">URL de Avatar:</label>
+        <label htmlFor="newPassword">Nueva Contraseña:</label>
         <input
-          type="text"
-          id="avatar_url"
-          name="avatar_url"
-          value={formData.avatar_url || ''}
-          onChange={handleChange}
+          type="password"
+          id="newPassword"
+          name="newPassword"
+          value={newPassword}
+          onChange={handlePasswordChange}
+          placeholder="Dejar en blanco para no cambiar"
         />
       </div>
       <div className="form-group">
-        <label htmlFor="bio">Biografía:</label>
-        <textarea
-          id="bio"
-          name="bio"
-          value={formData.bio || ''}
-          onChange={handleChange}
-          rows="3"
-        ></textarea>
+        <label htmlFor="confirmPassword">Confirmar Contraseña:</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          name="confirmPassword"
+          value={confirmPassword}
+          onChange={handleConfirmPasswordChange}
+        />
       </div>
-      */}
+      {passwordError && <p className="error-message" style={{ color: 'red', fontSize: '0.9em', marginTop: '-0.5rem', marginBottom: '1rem' }}>{passwordError}</p>}
+
       <div className="form-actions">
         <button type="submit" className="btn-primary">Guardar Cambios</button>
         <button type="button" className="btn-secondary" onClick={onCancel}>Cancelar</button>
