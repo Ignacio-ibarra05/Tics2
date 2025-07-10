@@ -57,7 +57,8 @@ function AdminPanel({ user, onLogout }) {
         console.log('✅ Correo enviado exitosamente')
       } catch (emailError) {
         console.error('❌ Error al enviar correo:', emailError)
-        setMessage('⚠️ Usuario creado, pero no se pudo enviar el correo.')
+        const errorMsg = emailError?.text || emailError?.message || JSON.stringify(emailError)
+        setMessage(`⚠️ Usuario creado, pero no se pudo enviar el correo: ${errorMsg}`)
       }
     }
 
@@ -101,4 +102,4 @@ function AdminPanel({ user, onLogout }) {
   )
 }
 
-export default AdminPanel
+export default AdminPanel;
