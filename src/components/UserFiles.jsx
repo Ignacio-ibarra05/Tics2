@@ -5,6 +5,8 @@ import { supabase } from '../supabaseClient';
 function UserFiles({ user, onLogout }) {
   const [archivos, setArchivos] = useState([]);
   const [mensaje, setMensaje] = useState('');
+  // 'username' se calcula a partir de 'user.username', por lo que debe ser
+  // una dependencia del useEffect si se usa dentro de él.
   const username = user.username.toLowerCase();
 
   useEffect(() => {
@@ -13,6 +15,7 @@ function UserFiles({ user, onLogout }) {
       const { data, error } = await supabase
         .storage
         .from('archivos')
+        // 'username' se usa aquí, por lo tanto debe ser una dependencia
         .list(`${username}/`, { limit: 100 });
 
       if (error) {
@@ -25,10 +28,11 @@ function UserFiles({ user, onLogout }) {
       }
     };
 
+    // La condición 'user?.username' también implica una dependencia de 'user'
     if (user?.username) {
       cargarArchivos();
     }
-  }, [user]);
+  }, [user, username]); // <-- ¡Aquí está la corrección! 'user' y 'username' añadidos como dependencias.
 
   const handleDownload = async (fileName) => {
     const { data, error } = await supabase
@@ -81,60 +85,3 @@ function UserFiles({ user, onLogout }) {
 }
 
 export default UserFiles;
-
-/*
-import React from 'react';
-import Navbar from './Navbar';
-
-// Datos de ejemplo - en una app real vendrían de una API
-const sampleFiles = [
-  { id: 1, name: 'Rutina_Ejercicios.xlsx', date: '2023-05-15', type: 'excel' },
-  { id: 2, name: 'Resultados_Analisis.pdf', date: '2023-06-01', type: 'pdf' },
-  { id: 3, name: 'Plan_Nutricional.pdf', date: '2023-06-10', type: 'pdf' },
-];
-
-function UserFiles({ user, onLogout }) {
-  const handleDownload = (fileName) => {
-    // Simulación de descarga
-    alert(`Descargando ${fileName}`);
-  };
-
-  return (
-    <div>
-      <Navbar user={user} onLogout={onLogout} />
-      
-      <div className="user-files-container">
-        <h1>Mis Archivos</h1>
-        
-        {sampleFiles.length === 0 ? (
-          <p className="no-files">No tienes archivos disponibles</p>
-        ) : (
-          <div className="files-list">
-            {sampleFiles.map(file => (
-              <div key={file.id} className="file-card">
-                <div className="file-info">
-                  <span className={`file-icon ${file.type}`}>
-                    {file.type === 'pdf' ? '📄' : '📊'}
-                  </span>
-                  <div>
-                    <h3>{file.name}</h3>
-                    <p>Subido el: {file.date}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => handleDownload(file.name)}
-                  className="download-btn"
-                >
-                  Descargar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default UserFiles;
-*/
