@@ -11,14 +11,6 @@ import './App.css';
 
 import PruebaConexion from './components/PruebaConexion'
 
-function App2() {
-  return (
-    <div>
-      <PruebaConexion />
-    </div>
-  )
-}
-
 function App() {
   const [user, setUser] = useState(null);
 
