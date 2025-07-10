@@ -1,114 +1,142 @@
-// EditProfileForm.jsx
+// components/EditProfileForm.jsx
 import React, { useState, useEffect } from 'react';
+import './EditProfileForm.css'; // Asegúrate de tener este archivo CSS o integrarlo en tu App.css
 
 function EditProfileForm({ initialData, onSave, onCancel }) {
-  const [formData, setFormData] = useState(initialData);
+  const [name, setName] = useState(initialData?.name || '');
+  const [username, setUsername] = useState(initialData?.username || '');
+  const [currentPassword, setCurrentPassword] = useState(''); // Nuevo estado para la contraseña actual
   const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState(''); // Para confirmar la nueva contraseña
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  // Sincroniza el estado interno del formulario si initialData cambia desde el padre
+  // Sincroniza initialData con los estados locales
   useEffect(() => {
-    setFormData(initialData);
-    // Limpiar campos de contraseña al recargar o cancelar
+    setName(initialData?.name || '');
+    setUsername(initialData?.username || '');
+    // Resetear las contraseñas al abrir el formulario o cambiar el usuario
+    setCurrentPassword('');
     setNewPassword('');
-    setConfirmPassword('');
-    setPasswordError('');
+    setConfirmNewPassword('');
+    setError('');
+    setMessage('');
   }, [initialData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handlePasswordChange = (e) => {
-    setNewPassword(e.target.value);
-    // Limpiar el error cuando el usuario empieza a escribir
-    if (passwordError) setPasswordError('');
-  };
-
-  const handleConfirmPasswordChange = (e) => {
-    setConfirmPassword(e.target.value);
-    // Limpiar el error cuando el usuario empieza a escribir
-    if (passwordError) setPasswordError('');
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+    setMessage('');
 
-    // Validar contraseñas si se está intentando cambiar
-    if (newPassword || confirmPassword) { // Solo validar si alguno de los campos de contraseña no está vacío
-      if (newPassword.length < 6) { // Ejemplo de validación de longitud mínima
-        setPasswordError('La contraseña debe tener al menos 6 caracteres.');
+    // Validación básica
+    if (!name.trim() || !username.trim()) {
+      setError('El nombre y el nombre de usuario no pueden estar vacíos.');
+      return;
+    }
+
+    if (newPassword) {
+      if (newPassword.length < 6) { // Requisito mínimo de longitud de contraseña de Supabase
+        setError('La nueva contraseña debe tener al menos 6 caracteres.');
         return;
       }
-      if (newPassword !== confirmPassword) {
-        setPasswordError('Las contraseñas no coinciden.');
+      if (newPassword !== confirmNewPassword) {
+        setError('La nueva contraseña y la confirmación no coinciden.');
+        return;
+      }
+      if (!currentPassword) {
+        setError('Por favor, ingresa tu contraseña actual para cambiarla.');
         return;
       }
     }
 
-    // Si todo es válido o no se está cambiando la contraseña, procede
-    onSave(formData, newPassword); // Pasa también la nueva contraseña (vacía si no se cambió)
-    setNewPassword(''); // Limpia los campos después de guardar
-    setConfirmPassword('');
+    // Llama a onSave, pasando la nueva contraseña y la contraseña actual
+    onSave(
+      { name, username },
+      newPassword,
+      currentPassword // Pasa la contraseña actual
+    );
+
+    // No limpiar los campos aquí, Perfil.jsx manejará la limpieza/cierre del formulario
+    // si la operación fue exitosa.
   };
 
   return (
-    <form onSubmit={handleSubmit} className="edit-profile-form">
-      <h2>Editar Perfil</h2>
-      <div className="form-group">
-        <label htmlFor="name">Nombre:</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="form-group">
-        <label htmlFor="username">Nombre de Usuario:</label>
-        <input
-          type="text"
-          id="username"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
-      </div>
+    <div className="edit-profile-form-container">
+      <form onSubmit={handleSubmit} className="edit-profile-form">
+        <h2 className="form-title">Editar Perfil</h2>
+        
+        <div className="form-group">
+          <label htmlFor="name">Nombre:</label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="form-input"
+            required
+          />
+        </div>
 
-      <h3 className="section-subtitle">Cambiar Contraseña (opcional)</h3>
-      <div className="form-group">
-        <label htmlFor="newPassword">Nueva Contraseña:</label>
-        <input
-          type="password"
-          id="newPassword"
-          name="newPassword"
-          value={newPassword}
-          onChange={handlePasswordChange}
-          placeholder="Dejar en blanco para no cambiar"
-        />
-      </div>
-      <div className="form-group">
-        <label htmlFor="confirmPassword">Confirmar Contraseña:</label>
-        <input
-          type="password"
-          id="confirmPassword"
-          name="confirmPassword"
-          value={confirmPassword}
-          onChange={handleConfirmPasswordChange}
-        />
-      </div>
-      {passwordError && <p className="error-message" style={{ color: 'red', fontSize: '0.9em', marginTop: '-0.5rem', marginBottom: '1rem' }}>{passwordError}</p>}
+        <div className="form-group">
+          <label htmlFor="username">Nombre de usuario:</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="form-input"
+            required
+          />
+        </div>
 
-      <div className="form-actions">
-        <button type="submit" className="btn-primary">Guardar Cambios</button>
-        <button type="button" className="btn-secondary" onClick={onCancel}>Cancelar</button>
-      </div>
-    </form>
+        <hr className="form-divider" /> {/* Separador visual para contraseñas */}
+        <h3 className="form-subtitle">Cambiar Contraseña (opcional)</h3>
+
+        <div className="form-group">
+          <label htmlFor="current-password">Contraseña Actual:</label>
+          <input
+            type="password"
+            id="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="form-input"
+            placeholder="Requerida para cambiar contraseña"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="new-password">Nueva Contraseña:</label>
+          <input
+            type="password"
+            id="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="form-input"
+            placeholder="Mínimo 6 caracteres"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="confirm-new-password">Confirmar Nueva Contraseña:</label>
+          <input
+            type="password"
+            id="confirm-new-password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            className="form-input"
+            placeholder="Repite la nueva contraseña"
+          />
+        </div>
+
+        {error && <p className="form-error">{error}</p>}
+        {message && <p className="form-message">{message}</p>}
+
+        <div className="form-actions">
+          <button type="submit" className="save-button">Guardar Cambios</button>
+          <button type="button" onClick={onCancel} className="cancel-button">Cancelar</button>
+        </div>
+      </form>
+    </div>
   );
 }
 
