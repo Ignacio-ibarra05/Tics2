@@ -1,4 +1,3 @@
-// Perfil.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import MedidasForm from './MedidasForm';
@@ -18,7 +17,8 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-function Perfil({ user, onLogout }) {
+// Perfil ahora recibe 'onUpdateUser' como prop desde App.js
+function Perfil({ user, onLogout, onUpdateUser }) { 
   const [medidas, setMedidas] = useState([]);
   const [activeTab, setActiveTab] = useState('medidas');
   const [showMedidasForm, setShowMedidasForm] = useState(false);
@@ -30,6 +30,8 @@ function Perfil({ user, onLogout }) {
     username: user?.username || '',
   });
 
+  // Este useEffect asegura que profileData local se mantenga sincronizado con el user prop
+  // (que a su vez se actualiza por onUpdateUser en App.js)
   useEffect(() => {
     if (user) {
       setProfileData({
@@ -98,14 +100,16 @@ function Perfil({ user, onLogout }) {
     }
   };
 
-  // Modificación de handleSaveProfile para incluir la contraseña
+  // handleSaveProfile ahora maneja la actualización en Supabase y notifica a App.js
   const handleSaveProfile = async (updatedProfileData, newPassword = '') => {
     try {
-      setError(null); // Limpia errores previos
-      setLoading(true); // Indica que la operación está en curso
+      setError(null); 
+      setLoading(true); 
 
+      let profileDataToUpdateGlobal = null; // Para almacenar los datos que se enviarán a onUpdateUser
+
+      // 1. Actualizar nombre y nombre de usuario en la tabla 'usuarios'
       let hasProfileChanges = false;
-      // Comprobar si hay cambios en nombre o username para evitar actualizaciones innecesarias
       if (updatedProfileData.name !== profileData.name || updatedProfileData.username !== profileData.username) {
         hasProfileChanges = true;
       }
@@ -125,45 +129,57 @@ function Perfil({ user, onLogout }) {
           console.error('❌ Error al guardar el perfil:', updateError);
           setError(`Error al guardar el perfil: ${updateError.message}`);
           setLoading(false);
-          return; // Detener la ejecución si hay un error en la actualización del perfil
+          return; 
         } else {
           console.log('✅ Perfil guardado en tabla usuarios:', data);
           setProfileData(data[0] || updatedProfileData);
+          // Prepara los datos para la actualización global (App.js)
+          profileDataToUpdateGlobal = {
+            name: updatedProfileData.name, 
+            username: updatedProfileData.username,
+          };
         }
       }
 
-      // Lógica para actualizar la contraseña si se proporcionó una nueva
+      // 2. Actualizar la contraseña si se proporcionó una nueva
       if (newPassword) {
         console.log('Intentando actualizar contraseña...');
+        // Supabase.auth.updateUser manejará la invalidación de la sesión por seguridad
         const { error: passwordError } = await supabase.auth.updateUser({
           password: newPassword
         });
 
         if (passwordError) {
           console.error('❌ Error al actualizar la contraseña:', passwordError);
-          setError(`Error al actualizar la contraseña: ${passwordError.message}. Intenta de nuevo.`);
+          setError(`Error al actualizar la contraseña: ${passwordError.message}. Por seguridad, es posible que necesites volver a iniciar sesión.`);
           setLoading(false);
-          return; // Detener la ejecución si hay un error en la actualización de contraseña
+          return; 
         } else {
           console.log('✅ Contraseña actualizada exitosamente.');
-          // No hay necesidad de actualizar el estado `profileData` por la contraseña
-          // Podrías mostrar un mensaje de éxito si lo deseas
+          // Después de un cambio de contraseña exitoso, Supabase suele invalidar la sesión.
+          // El usuario puede necesitar volver a iniciar sesión.
+          // Aquí no llamamos a onUpdateUser porque la contraseña no está en el estado 'user' de App.js directamente.
         }
       }
 
-      // Si no hubo cambios en el perfil y tampoco se actualizó la contraseña
+      // Notificar a App.js si hubo cambios en el perfil (nombre/username)
+      if (profileDataToUpdateGlobal && onUpdateUser) {
+        onUpdateUser(profileDataToUpdateGlobal);
+      }
+      
+      // Mensaje de éxito o no cambios
       if (!hasProfileChanges && !newPassword) {
         setError('No se detectaron cambios para guardar.');
       } else {
-        setShowEditProfileForm(false); // Cierra el formulario de edición solo si hubo cambios exitosos
-        setError(null); // Limpia cualquier error anterior si la operación fue exitosa
+        setShowEditProfileForm(false); 
+        setError(null); 
       }
 
     } catch (err) {
       console.error('❌ Error inesperado al guardar el perfil:', err);
       setError('Error inesperado al guardar el perfil');
     } finally {
-      setLoading(false); // Siempre desactiva el estado de carga
+      setLoading(false); 
     }
   };
 
@@ -227,10 +243,12 @@ function Perfil({ user, onLogout }) {
 
           <div className="profile-info">
             <div className="profile-avatar">
+              {/* Utiliza profileData para el avatar, que se actualiza localmente */}
               {profileData.name.charAt(0).toUpperCase() || 'U'}
             </div>
 
             <div className="profile-details">
+              {/* Muestra los datos del perfil localmente actualizados */}
               <h1 className="profile-name">{profileData.name || 'Usuario'}</h1>
               <p className="profile-username">@{profileData.username || 'username'}</p>
             </div>
@@ -256,7 +274,7 @@ function Perfil({ user, onLogout }) {
         {showEditProfileForm && (
           <div className="profile-card edit-profile-form-container">
             <EditProfileForm
-              initialData={profileData}
+              initialData={profileData} // Pasa los datos del estado local
               onSave={handleSaveProfile}
               onCancel={handleCancelEditProfile}
             />
@@ -365,6 +383,7 @@ function Perfil({ user, onLogout }) {
               <div className="about-section">
                 <div className="about-item">
                   <h3 className="about-label">Información Básica</h3>
+                  {/* Usa profileData para mostrar la información más reciente */}
                   <p><strong>Nombre:</strong> {profileData.name || 'N/A'}</p>
                   <p><strong>Usuario:</strong> @{profileData.username || 'N/A'}</p>
                   <p><strong>Rol:</strong> {user?.role || 'N/A'}</p>
