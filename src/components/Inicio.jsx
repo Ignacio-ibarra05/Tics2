@@ -3,9 +3,9 @@ import Navbar from './Navbar';
 
 function Inicio({ user, onLogout }) {
   const galleryImages = [
-    { id: 1, src: '/img/gym1.jpg', alt: 'Entrenamiento 1' },
-    { id: 2, src: '/img/gym2.jpg', alt: 'Entrenamiento 2' },
-    { id: 3, src: '/img/gym3.jpg', alt: 'Entrenamiento 3' },
+    { id: 1, src: `${process.env.PUBLIC_URL}/img//img/gym1.jpg`, alt: 'Entrenamiento 1' },
+    { id: 2, src: `${process.env.PUBLIC_URL}/img//img/gym2.jpg`, alt: 'Entrenamiento 2' },
+    { id: 3, src: `${process.env.PUBLIC_URL}/img//img/gym3.jpg`, alt: 'Entrenamiento 3' },
   ];
 
   return (
