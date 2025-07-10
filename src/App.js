@@ -1,3 +1,4 @@
+// App.js
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
@@ -7,7 +8,6 @@ import Blog from './components/Blog';
 import AdminPanel from './components/AdminPanel';
 import FileManagement from './components/FileManagement';
 import UserFiles from './components/UserFiles';
-import EditProfileForm from './components/EditProfileForm';
 import './App.css';
 
 function App() {
@@ -21,7 +21,8 @@ function App() {
     setUser(null);
   };
 
-  // Función para actualizar los datos del usuario
+  // Función para actualizar los datos del usuario en el estado global
+  // Esta función es crucial para que los cambios en Perfil.jsx se reflejen en toda la aplicación
   const handleUpdateUser = (updatedData) => {
     setUser(prev => ({
       ...prev,
@@ -41,26 +42,28 @@ function App() {
           element={user ? <Navigate to="/perfil" /> : <Login onLogin={handleLogin} />} 
         />
         
-        {/* Perfil del usuario */}
+        {/* Perfil del usuario - Ahora recibe onUpdateUser */}
         <Route 
           path="/perfil" 
           element={
             user ? 
-              <Perfil user={user} onLogout={handleLogout} /> : 
+              <Perfil user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} /> : 
               <Navigate to="/login" />
           } 
         />
         
-        {/* Configuraciones de usuario */}
+        {/*
+          Ruta /settings:
+          Si Perfil.jsx ya maneja la edición del perfil, esta ruta puede ser redundante.
+          Sugiero redirigir a /perfil si tu intención es que el usuario edite su propio perfil
+          desde la página de perfil. Si EditProfileForm fuera para editar otros usuarios (solo admin),
+          entonces la lógica cambiaría. Por simplicidad, la redirigimos.
+        */}
         <Route 
           path="/settings" 
           element={
             user ? 
-              <EditProfileForm 
-                user={user} 
-                onLogout={handleLogout} 
-                onUpdateUser={handleUpdateUser}
-              /> : 
+              <Navigate to="/perfil" /> : // Redirigimos a /perfil donde se edita el perfil
               <Navigate to="/login" />
           } 
         />
