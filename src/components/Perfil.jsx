@@ -1,7 +1,8 @@
+// Perfil.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import MedidasForm from './MedidasForm';
-import EditProfileForm from './EditProfileForm'; // Asegúrate de que esta importación esté ahí
+import EditProfileForm from './EditProfileForm'; 
 import { supabase } from '../supabaseClient';
 import {
   Chart as ChartJS,
@@ -17,7 +18,6 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// Perfil ahora recibe 'onUpdateUser' como prop desde App.js
 function Perfil({ user, onLogout, onUpdateUser }) { 
   const [medidas, setMedidas] = useState([]);
   const [activeTab, setActiveTab] = useState('medidas');
@@ -30,8 +30,6 @@ function Perfil({ user, onLogout, onUpdateUser }) {
     username: user?.username || '',
   });
 
-  // Este useEffect asegura que profileData local se mantenga sincronizado con el user prop
-  // (que a su vez se actualiza por onUpdateUser en App.js)
   useEffect(() => {
     if (user) {
       setProfileData({
@@ -100,13 +98,13 @@ function Perfil({ user, onLogout, onUpdateUser }) {
     }
   };
 
-  // handleSaveProfile ahora maneja la actualización en Supabase y notifica a App.js
-  const handleSaveProfile = async (updatedProfileData, newPassword = '') => {
+  // handleSaveProfile ahora recibe la contraseña actual
+  const handleSaveProfile = async (updatedProfileData, newPassword = '', currentPassword = '') => {
     try {
       setError(null); 
       setLoading(true); 
 
-      let profileDataToUpdateGlobal = null; // Para almacenar los datos que se enviarán a onUpdateUser
+      let profileDataToUpdateGlobal = null; 
 
       // 1. Actualizar nombre y nombre de usuario en la tabla 'usuarios'
       let hasProfileChanges = false;
@@ -133,7 +131,6 @@ function Perfil({ user, onLogout, onUpdateUser }) {
         } else {
           console.log('✅ Perfil guardado en tabla usuarios:', data);
           setProfileData(data[0] || updatedProfileData);
-          // Prepara los datos para la actualización global (App.js)
           profileDataToUpdateGlobal = {
             name: updatedProfileData.name, 
             username: updatedProfileData.username,
@@ -144,7 +141,24 @@ function Perfil({ user, onLogout, onUpdateUser }) {
       // 2. Actualizar la contraseña si se proporcionó una nueva
       if (newPassword) {
         console.log('Intentando actualizar contraseña...');
-        // Supabase.auth.updateUser manejará la invalidación de la sesión por seguridad
+        
+        // --- Paso de reautenticación ---
+        // Se requiere la contraseña actual para reautenticar al usuario
+        // antes de permitir el cambio de contraseña.
+        const { error: reauthError } = await supabase.auth.signInWithPassword({
+          email: user.email, // Usa el email del usuario para reautenticar
+          password: currentPassword,
+        });
+
+        if (reauthError) {
+          console.error('❌ Error de reautenticación:', reauthError);
+          setError(`Error: La contraseña actual es incorrecta o la sesión ha caducado. ${reauthError.message}`);
+          setLoading(false);
+          return; // Detiene el proceso si la reautenticación falla
+        }
+        console.log('✅ Reautenticación exitosa.');
+        // --- Fin de paso de reautenticación ---
+
         const { error: passwordError } = await supabase.auth.updateUser({
           password: newPassword
         });
@@ -156,9 +170,9 @@ function Perfil({ user, onLogout, onUpdateUser }) {
           return; 
         } else {
           console.log('✅ Contraseña actualizada exitosamente.');
-          // Después de un cambio de contraseña exitoso, Supabase suele invalidar la sesión.
+          // Después de un cambio de contraseña exitoso, Supabase puede invalidar la sesión.
           // El usuario puede necesitar volver a iniciar sesión.
-          // Aquí no llamamos a onUpdateUser porque la contraseña no está en el estado 'user' de App.js directamente.
+          // Opcional: onLogout(); para forzar el logout
         }
       }
 
@@ -167,7 +181,6 @@ function Perfil({ user, onLogout, onUpdateUser }) {
         onUpdateUser(profileDataToUpdateGlobal);
       }
       
-      // Mensaje de éxito o no cambios
       if (!hasProfileChanges && !newPassword) {
         setError('No se detectaron cambios para guardar.');
       } else {
@@ -185,7 +198,6 @@ function Perfil({ user, onLogout, onUpdateUser }) {
 
   const handleCancelEditProfile = () => {
     setShowEditProfileForm(false);
-    // Restablecer profileData a los datos originales del usuario si la edición fue cancelada
     setProfileData({
       name: user?.name || '',
       username: user?.username || '',
@@ -243,12 +255,10 @@ function Perfil({ user, onLogout, onUpdateUser }) {
 
           <div className="profile-info">
             <div className="profile-avatar">
-              {/* Utiliza profileData para el avatar, que se actualiza localmente */}
               {profileData.name.charAt(0).toUpperCase() || 'U'}
             </div>
 
             <div className="profile-details">
-              {/* Muestra los datos del perfil localmente actualizados */}
               <h1 className="profile-name">{profileData.name || 'Usuario'}</h1>
               <p className="profile-username">@{profileData.username || 'username'}</p>
             </div>
@@ -274,8 +284,8 @@ function Perfil({ user, onLogout, onUpdateUser }) {
         {showEditProfileForm && (
           <div className="profile-card edit-profile-form-container">
             <EditProfileForm
-              initialData={profileData} // Pasa los datos del estado local
-              onSave={handleSaveProfile}
+              initialData={profileData} 
+              onSave={handleSaveProfile} // Asegúrate de que el onSave en EditProfileForm pase currentPassword
               onCancel={handleCancelEditProfile}
             />
           </div>
@@ -383,7 +393,6 @@ function Perfil({ user, onLogout, onUpdateUser }) {
               <div className="about-section">
                 <div className="about-item">
                   <h3 className="about-label">Información Básica</h3>
-                  {/* Usa profileData para mostrar la información más reciente */}
                   <p><strong>Nombre:</strong> {profileData.name || 'N/A'}</p>
                   <p><strong>Usuario:</strong> @{profileData.username || 'N/A'}</p>
                   <p><strong>Rol:</strong> {user?.role || 'N/A'}</p>
