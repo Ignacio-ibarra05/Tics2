@@ -56,7 +56,7 @@ function App() {
           path="/settings" 
           element={
             user ? 
-              <UserSettings 
+              <EditProfileForm 
                 user={user} 
                 onLogout={handleLogout} 
                 onUpdateUser={handleUpdateUser}
