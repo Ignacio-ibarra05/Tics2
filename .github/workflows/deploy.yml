@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Cambia 'main' por la rama principal de tu proyecto si es diferente (ej. master)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # El tipo de máquina virtual donde se ejecutará el flujo
+
+    steps:
+      - name: Checkout your code # Paso para clonar tu repositorio
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js # Configura el entorno de Node.js (asegúrate de usar la versión correcta)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Puedes cambiar esta versión de Node.js según tu proyecto
+
+      - name: Install dependencies # Instala las dependencias de tu proyecto
+        run: npm install # O 'yarn install' si usas Yarn
+
+      - name: Build project # Este es el paso clave: construye tu aplicación y pasa las variables secretas
+        run: npm run build # O 'yarn build' si usas Yarn. Este comando genera los archivos estáticos.
+        env: # Aquí se definen las variables de entorno que tu proceso de build utilizará
+          # Estas deben coincidir con los nombres que creaste en GitHub Secrets y con los prefijos que tu framework espera
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Si tienes otras variables, añádelas aquí, por ejemplo:
+          # VITE_OTRA_VARIABLE: ${{ secrets.VITE_OTRA_VARIABLE }}
+
+      - name: Deploy to GitHub Pages # Despliega los archivos generados a GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3 # Una acción popular para desplegar a GH Pages
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Token automático de GitHub para permisos de despliegue
+          publish_dir: ./dist # **IMPORTANTE:** Cambia 'dist' por la carpeta de salida de tu build (ej. 'build', 'public', 'out')
+          # Si necesitas una rama específica para el despliegue (ej. 'gh-pages'), puedes añadir:
+          # publish_branch: gh-pages
