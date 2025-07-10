@@ -7,6 +7,7 @@ import Blog from './components/Blog';
 import AdminPanel from './components/AdminPanel';
 import FileManagement from './components/FileManagement';
 import UserFiles from './components/UserFiles';
+import UserSettings from './components/UserSettings';
 import './App.css';
 
 function App() {
@@ -18,6 +19,14 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
+  };
+
+  // Función para actualizar los datos del usuario
+  const handleUpdateUser = (updatedData) => {
+    setUser(prev => ({
+      ...prev,
+      ...updatedData
+    }));
   };
 
   return (
@@ -38,6 +47,20 @@ function App() {
           element={
             user ? 
               <Perfil user={user} onLogout={handleLogout} /> : 
+              <Navigate to="/login" />
+          } 
+        />
+        
+        {/* Configuraciones de usuario */}
+        <Route 
+          path="/settings" 
+          element={
+            user ? 
+              <UserSettings 
+                user={user} 
+                onLogout={handleLogout} 
+                onUpdateUser={handleUpdateUser}
+              /> : 
               <Navigate to="/login" />
           } 
         />
