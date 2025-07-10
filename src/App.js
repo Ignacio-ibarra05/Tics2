@@ -9,8 +9,6 @@ import FileManagement from './components/FileManagement';
 import UserFiles from './components/UserFiles';
 import './App.css';
 
-import PruebaConexion from './components/PruebaConexion'
-
 function App() {
   const [user, setUser] = useState(null);
 
