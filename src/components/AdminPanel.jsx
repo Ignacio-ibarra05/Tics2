@@ -49,7 +49,7 @@ function AdminPanel({ user, onLogout }) {
         to_email: email,
         username,
         password,
-        link: 'https://ignacio-ibarra05.github.io/Tics2/login'
+        link: 'https://ignacio-ibarra05.github.io/Tics2'
       }
 
       try {
