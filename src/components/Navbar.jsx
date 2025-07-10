@@ -10,7 +10,7 @@ function Navbar({ user, onLogout }) {
         <div className="flex items-center">
           <img 
             className='logo h-10 hover:opacity-90 transition-opacity duration-200' 
-            src="/img/logoo.png" 
+            src="public/img/logoo.png" 
             alt='logo' 
             onClick={() => navigate('/')}
             style={{ cursor: 'pointer' }}
