@@ -1,7 +1,8 @@
+// Perfil.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import MedidasForm from './MedidasForm';
-import EditProfileForm from './EditProfileForm'; // Importa el nuevo componente
+import EditProfileForm from './EditProfileForm'; // Asegúrate de que esta importación esté ahí
 import { supabase } from '../supabaseClient';
 import {
   Chart as ChartJS,
@@ -23,15 +24,13 @@ function Perfil({ user, onLogout }) {
   const [showMedidasForm, setShowMedidasForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showEditProfileForm, setShowEditProfileForm] = useState(false); // Nuevo estado para mostrar/ocultar el formulario de edición de perfil
-  const [profileData, setProfileData] = useState({ // Nuevo estado para los datos del perfil a editar
+  const [showEditProfileForm, setShowEditProfileForm] = useState(false);
+  const [profileData, setProfileData] = useState({
     name: user?.name || '',
     username: user?.username || '',
-    // Puedes añadir otros campos aquí como 'avatar_url', 'bio', etc., si los tienes en tu tabla de usuarios
   });
 
   useEffect(() => {
-    // Sincroniza profileData con los props 'user' cuando 'user' cambie
     if (user) {
       setProfileData({
         name: user.name || '',
@@ -99,40 +98,72 @@ function Perfil({ user, onLogout }) {
     }
   };
 
-  const handleSaveProfile = async (updatedData) => {
+  // Modificación de handleSaveProfile para incluir la contraseña
+  const handleSaveProfile = async (updatedProfileData, newPassword = '') => {
     try {
       setError(null); // Limpia errores previos
-      // Aquí implementaremos la lógica para actualizar el perfil en Supabase
-      console.log('Datos de perfil intentando actualizar:', updatedData);
+      setLoading(true); // Indica que la operación está en curso
 
-      // Ejemplo de cómo se actualizaría la tabla 'profiles' o 'users' en Supabase
-      // Asumiendo que tienes una tabla 'profiles' vinculada al 'auth.users' por 'id'
-      const { data, error: updateError } = await supabase
-        .from('profiles') // O el nombre de tu tabla de perfiles
-        .update({ 
-          name: updatedData.name, 
-          username: updatedData.username 
-          // Añade aquí los otros campos que quieras actualizar
-        })
-        .eq('id', user.id) // Asegúrate de actualizar el perfil del usuario correcto
-        .select(); // Para obtener los datos actualizados
-
-      if (updateError) {
-        console.error('❌ Error al guardar el perfil:', updateError);
-        setError(`Error al guardar el perfil: ${updateError.message}`);
-      } else {
-        console.log('✅ Perfil guardado:', data);
-        // Actualiza el estado local 'profileData' para reflejar los cambios inmediatamente en la UI
-        setProfileData(data[0] || updatedData); // Usamos data[0] si supabase devuelve el objeto actualizado
-        setShowEditProfileForm(false); // Cierra el formulario de edición
-        setError(null); // Asegúrate de que no haya mensajes de error visibles
-        // Opcional: Si el componente padre maneja el estado `user`,
-        // es posible que necesites una prop `onProfileUpdate` para notificarle los cambios
-        // Por ejemplo: if (onProfileUpdate) onProfileUpdate(data[0]);
+      let hasProfileChanges = false;
+      // Comprobar si hay cambios en nombre o username para evitar actualizaciones innecesarias
+      if (updatedProfileData.name !== profileData.name || updatedProfileData.username !== profileData.username) {
+        hasProfileChanges = true;
       }
+
+      if (hasProfileChanges) {
+        console.log('Datos de perfil intentando actualizar en tabla usuarios:', updatedProfileData);
+        const { data, error: updateError } = await supabase
+          .from('usuarios')
+          .update({
+            nombre: updatedProfileData.name,
+            username: updatedProfileData.username
+          })
+          .eq('id', user.id)
+          .select();
+
+        if (updateError) {
+          console.error('❌ Error al guardar el perfil:', updateError);
+          setError(`Error al guardar el perfil: ${updateError.message}`);
+          setLoading(false);
+          return; // Detener la ejecución si hay un error en la actualización del perfil
+        } else {
+          console.log('✅ Perfil guardado en tabla usuarios:', data);
+          setProfileData(data[0] || updatedProfileData);
+        }
+      }
+
+      // Lógica para actualizar la contraseña si se proporcionó una nueva
+      if (newPassword) {
+        console.log('Intentando actualizar contraseña...');
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+
+        if (passwordError) {
+          console.error('❌ Error al actualizar la contraseña:', passwordError);
+          setError(`Error al actualizar la contraseña: ${passwordError.message}. Intenta de nuevo.`);
+          setLoading(false);
+          return; // Detener la ejecución si hay un error en la actualización de contraseña
+        } else {
+          console.log('✅ Contraseña actualizada exitosamente.');
+          // No hay necesidad de actualizar el estado `profileData` por la contraseña
+          // Podrías mostrar un mensaje de éxito si lo deseas
+        }
+      }
+
+      // Si no hubo cambios en el perfil y tampoco se actualizó la contraseña
+      if (!hasProfileChanges && !newPassword) {
+        setError('No se detectaron cambios para guardar.');
+      } else {
+        setShowEditProfileForm(false); // Cierra el formulario de edición solo si hubo cambios exitosos
+        setError(null); // Limpia cualquier error anterior si la operación fue exitosa
+      }
+
     } catch (err) {
       console.error('❌ Error inesperado al guardar el perfil:', err);
       setError('Error inesperado al guardar el perfil');
+    } finally {
+      setLoading(false); // Siempre desactiva el estado de carga
     }
   };
 
@@ -196,12 +227,12 @@ function Perfil({ user, onLogout }) {
 
           <div className="profile-info">
             <div className="profile-avatar">
-              {profileData.name.charAt(0).toUpperCase() || 'U'} {/* Usa profileData.name aquí */}
+              {profileData.name.charAt(0).toUpperCase() || 'U'}
             </div>
 
             <div className="profile-details">
-              <h1 className="profile-name">{profileData.name || 'Usuario'}</h1> {/* Usa profileData.name aquí */}
-              <p className="profile-username">@{profileData.username || 'username'}</p> {/* Usa profileData.username aquí */}
+              <h1 className="profile-name">{profileData.name || 'Usuario'}</h1>
+              <p className="profile-username">@{profileData.username || 'username'}</p>
             </div>
 
             <div className="profile-actions">
@@ -225,7 +256,7 @@ function Perfil({ user, onLogout }) {
         {showEditProfileForm && (
           <div className="profile-card edit-profile-form-container">
             <EditProfileForm
-              initialData={profileData} // Pasamos los datos actuales del perfil al formulario
+              initialData={profileData}
               onSave={handleSaveProfile}
               onCancel={handleCancelEditProfile}
             />
@@ -334,17 +365,19 @@ function Perfil({ user, onLogout }) {
               <div className="about-section">
                 <div className="about-item">
                   <h3 className="about-label">Información Básica</h3>
-                  <p><strong>Nombre:</strong> {profileData.name || 'N/A'}</p> {/* Usa profileData.name aquí */}
-                  <p><strong>Usuario:</strong> @{profileData.username || 'N/A'}</p> {/* Usa profileData.username aquí */}
+                  <p><strong>Nombre:</strong> {profileData.name || 'N/A'}</p>
+                  <p><strong>Usuario:</strong> @{profileData.username || 'N/A'}</p>
                   <p><strong>Rol:</strong> {user?.role || 'N/A'}</p>
                   <p><strong>Miembro desde:</strong> Enero 2023</p>
                 </div>
+                
                 <div className="about-item">
                   <h3 className="about-label">Objetivos Fitness</h3>
                   <p>🏆 Ganar masa muscular</p>
                   <p>💪 Aumentar fuerza en ejercicios compuestos</p>
                   <p>🏃‍♂️ Mejorar resistencia cardiovascular</p>
                 </div>
+                
                 {user?.role === 'admin' && (
                   <div className="about-item admin-features">
                     <h3 className="about-label">Privilegios de Administrador</h3>
