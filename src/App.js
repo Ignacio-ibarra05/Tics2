@@ -7,7 +7,7 @@ import Blog from './components/Blog';
 import AdminPanel from './components/AdminPanel';
 import FileManagement from './components/FileManagement';
 import UserFiles from './components/UserFiles';
-import UserSettings from './components/UserSettings';
+import EditProfileForm from './components/EditProfileForm';
 import './App.css';
 
 function App() {
