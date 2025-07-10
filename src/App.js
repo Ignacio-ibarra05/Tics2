@@ -21,7 +21,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/Tics2">
       <Routes>
         {/* Ruta principal */}
         <Route path="/" element={<Inicio user={user} onLogout={handleLogout} />} />
